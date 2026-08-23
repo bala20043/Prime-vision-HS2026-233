@@ -4,12 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import GoogleButton from './GoogleButton';
 
 export default function LoginForm() {
-  const [searchParams] = useSearchParams();
-  const isAdminParam = searchParams.get('admin') === 'true';
-
   const [formData, setFormData] = useState({
-    email: isAdminParam ? 'collegeofcom@gmail.com' : '',
-    password: isAdminParam ? 'collegekce2026' : '',
+    email: '',
+    password: '',
   });
 
   const [errors, setErrors] = useState({});
