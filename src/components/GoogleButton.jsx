@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { syncGoogleUser } from '../services/authApi';
 import { useAuth } from '../context/AuthContext';
 
 export default function GoogleButton({ label = "Continue with Google" }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { saveUserSession, showToast } = useAuth();
+  const { loginGoogle, showToast } = useAuth();
   const navigate = useNavigate();
 
   const handleClick = async () => {
@@ -19,8 +18,7 @@ export default function GoogleButton({ label = "Continue with Google" }) {
         role: 'student'
       };
 
-      await syncGoogleUser(googleUser);
-      saveUserSession(googleUser);
+      await loginGoogle(googleUser);
       showToast('Successfully logged in with Google!');
       navigate('/assistant', { replace: true });
     } catch (err) {

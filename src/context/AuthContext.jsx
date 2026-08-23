@@ -186,6 +186,17 @@ export function AuthProvider({ children }) {
     showToast('You have been logged out.');
   };
 
+  const loginGoogle = useCallback(async (userData) => {
+    if (userData) {
+      saveUserSession(userData);
+      try {
+        await syncGoogleUser(userData);
+      } catch (e) {
+        console.warn('Google sync notice:', e);
+      }
+    }
+  }, [saveUserSession]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -195,6 +206,8 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        loginGoogle,
+        saveUserSession,
         toastMessage,
         showToast,
       }}
