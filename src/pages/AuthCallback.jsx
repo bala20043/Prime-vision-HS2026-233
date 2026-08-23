@@ -14,17 +14,13 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let isMounted = true;
+    let authSubscription = null;
 
     async function processCallback() {
       try {
         setStatusText('Verifying Google authorization...');
 
-        // 1. Clean hash token from browser URL bar if present for security
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          console.log('OAuth token detected in URL hash, processing session...');
-        }
-
-        // 2. Check if Supabase OAuth created a session
+        // 1. Check if Supabase OAuth created a session
         if (supabase && supabase.auth) {
           const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -37,9 +33,8 @@ export default function AuthCallback() {
             const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Google Student';
             const email = session.user.email;
 
-            setStatusText('Establishing application session...');
+            setStatusText(`Establishing session for ${email}...`);
 
-            // Sync user to Backend DB & Supabase public.users + set session cookie
             const syncRes = await syncGoogleUser({
               id: googleId,
               name: name,
@@ -57,7 +52,6 @@ export default function AuthCallback() {
 
             saveUserSession(userObj);
 
-            // Clean URL hash
             if (window.location.hash) {
               window.history.replaceState(null, '', window.location.pathname);
             }
@@ -66,6 +60,42 @@ export default function AuthCallback() {
             navigate('/assistant', { replace: true });
             return;
           }
+
+          // 2. Subscribe to auth state change to capture incoming OAuth session
+          const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user && isMounted) {
+              const googleId = session.user.id;
+              const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Google Student';
+              const email = session.user.email;
+
+              setStatusText(`Establishing session for ${email}...`);
+
+              const syncRes = await syncGoogleUser({
+                id: googleId,
+                name: name,
+                email: email,
+                google_id: googleId
+              });
+
+              const userObj = syncRes?.user || {
+                id: googleId,
+                name: name,
+                email: email,
+                auth_provider: 'google',
+                role: 'student'
+              };
+
+              saveUserSession(userObj);
+
+              if (window.location.hash) {
+                window.history.replaceState(null, '', window.location.pathname);
+              }
+
+              showToast(`Welcome, ${name.split(' ')[0]} 👋`);
+              navigate('/assistant', { replace: true });
+            }
+          });
+          authSubscription = listener?.subscription;
         }
 
         // 3. Check if Backend session cookie exists
@@ -80,7 +110,7 @@ export default function AuthCallback() {
           return;
         }
 
-        // 4. Fallback check from localStorage
+        // 4. Check from localStorage if already saved
         const saved = localStorage.getItem('college_user');
         if (saved && isMounted) {
           try {
@@ -95,22 +125,6 @@ export default function AuthCallback() {
           } catch (e) {}
         }
 
-        // 5. Default fallback for Google button click flow
-        const defaultUser = {
-          id: `usr_google_${Date.now()}`,
-          name: 'Google Student User',
-          email: 'google.student@college.edu',
-          auth_provider: 'google',
-          role: 'student'
-        };
-        await syncGoogleUser(defaultUser);
-        saveUserSession(defaultUser);
-        if (window.location.hash) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-        showToast('Welcome, Google Student 👋');
-        navigate('/assistant', { replace: true });
-
       } catch (err) {
         console.error('Auth callback processing error:', err);
         if (isMounted) {
@@ -123,6 +137,7 @@ export default function AuthCallback() {
 
     return () => {
       isMounted = false;
+      if (authSubscription) authSubscription.unsubscribe();
     };
   }, [navigate, saveUserSession, showToast]);
 
