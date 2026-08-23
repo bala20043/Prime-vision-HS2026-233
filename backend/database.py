@@ -7,7 +7,7 @@ from auth import hash_password
 DB_PATH = os.path.join(os.path.dirname(__file__), "college_assistant.db")
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -36,38 +36,19 @@ def init_db():
 def get_user_by_email(email: str):
     clean_email = email.lower().strip()
     
-    # 1. Try Supabase Auth Admin
-    if supabase:
-        try:
-            users = supabase.auth.admin.list_users()
-            for u in users:
-                if u.email.lower() == clean_email:
-                    name = u.user_metadata.get("name", "Student User") if u.user_metadata else "Student User"
-                    auth_provider = u.app_metadata.get("provider", "email") if u.app_metadata else "email"
-                    local_info = None
-                    try:
-                        conn = get_db_connection()
-                        cursor = conn.cursor()
-                        cursor.execute("SELECT password_hash FROM users WHERE email = ?", (clean_email,))
-                        row = cursor.fetchone()
-                        conn.close()
-                        local_info = dict(row) if row else None
-                    except Exception:
-                        pass
-                    
-                    return {
-                        "id": u.id,
-                        "name": name,
-                        "email": u.email,
-                        "password_hash": local_info.get("password_hash") if local_info else None,
-                        "auth_provider": auth_provider,
-                        "created_at": u.created_at,
-                        "last_login": getattr(u, "last_sign_in_at", None)
-                    }
-        except Exception:
-            pass
+    # 1. Check local SQLite (instant < 2ms)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
+        user = cursor.fetchone()
+        conn.close()
+        if user:
+            return dict(user)
+    except Exception as e:
+        print("SQLite get_user_by_email note:", e)
 
-    # 2. Try Supabase Table Editor (public.users)
+    # 2. Check Supabase Table Editor (public.users)
     if supabase:
         try:
             res = supabase.table("users").select("*").eq("email", clean_email).execute()
@@ -76,58 +57,32 @@ def get_user_by_email(email: str):
         except Exception:
             pass
 
-    # 3. Fallback to local SQLite
+    return None
+
+def get_user_by_id(user_id: str):
+    sid = str(user_id)
+    # 1. Check local SQLite (instant < 2ms)
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
+        cursor.execute("SELECT * FROM users WHERE id = ?", (sid,))
         user = cursor.fetchone()
         conn.close()
-        return dict(user) if user else None
+        if user:
+            return dict(user)
     except Exception as e:
-        print("SQLite get_user_by_email fallback note:", e)
-        return None
+        print("SQLite get_user_by_id note:", e)
 
-def get_user_by_id(user_id: str):
-    # 1. Try Supabase Auth Admin
+    # 2. Check Supabase Table Editor (public.users)
     if supabase:
         try:
-            u = supabase.auth.admin.get_user_by_id(str(user_id))
-            if u and hasattr(u, 'user') and u.user:
-                usr = u.user
-                name = usr.user_metadata.get("name", "Student User") if usr.user_metadata else "Student User"
-                auth_provider = usr.app_metadata.get("provider", "email") if usr.app_metadata else "email"
-                return {
-                    "id": usr.id,
-                    "name": name,
-                    "email": usr.email,
-                    "auth_provider": auth_provider,
-                    "created_at": usr.created_at,
-                    "last_login": getattr(usr, "last_sign_in_at", None)
-                }
-        except Exception:
-            pass
-
-    # 2. Try Supabase Table Editor (public.users)
-    if supabase:
-        try:
-            res = supabase.table("users").select("*").eq("id", str(user_id)).execute()
+            res = supabase.table("users").select("*").eq("id", sid).execute()
             if res and hasattr(res, 'data') and res.data and len(res.data) > 0:
                 return res.data[0]
         except Exception:
             pass
 
-    # 3. Fallback to local SQLite
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (str(user_id),))
-        user = cursor.fetchone()
-        conn.close()
-        return dict(user) if user else None
-    except Exception as e:
-        print("SQLite get_user_by_id fallback note:", e)
-        return None
+    return None
 
 def create_user_in_supabase(name: str, email: str, password: str = None, auth_provider: str = "email", provider_user_id: str = None):
     clean_email = email.lower().strip()
@@ -135,7 +90,7 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
     supabase_user = None
     pwd_hash = hash_password(password) if password else None
 
-    # 1. Store directly in Supabase Auth (auth.users)
+    # 1. Register in Supabase Auth
     if supabase:
         try:
             if password:
@@ -163,7 +118,20 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
 
     user_id = str(supabase_user.id) if supabase_user else f"usr_{int(datetime.utcnow().timestamp())}"
     
-    # 2. ALSO insert directly into Supabase Table Editor (public.users)
+    # 2. Sync to local SQLite immediately for lightning fast login
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT OR REPLACE INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, name, clean_email, pwd_hash, auth_provider, provider_user_id, created_at, created_at))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("SQLite insert note:", e)
+
+    # 3. Sync to Supabase Table Editor (public.users)
     if supabase:
         try:
             supabase.table("users").upsert({
@@ -175,22 +143,8 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
                 "created_at": created_at,
                 "last_login": created_at
             }, on_conflict="email").execute()
-            print(f"User {clean_email} inserted directly into Supabase Table Editor (public.users)!")
         except Exception as e:
             print("Supabase Table Editor insert notice:", e)
-
-    # 3. Sync with local SQLite
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, name, clean_email, pwd_hash, auth_provider, provider_user_id, created_at, created_at))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("SQLite backup write skipped:", e)
 
     return {
         "id": user_id,
@@ -203,11 +157,6 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
 
 def update_last_login(user_id: str):
     now = datetime.utcnow().isoformat()
-    if supabase:
-        try:
-            supabase.table("users").update({"last_login": now}).eq("id", str(user_id)).execute()
-        except Exception:
-            pass
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -216,3 +165,9 @@ def update_last_login(user_id: str):
         conn.close()
     except Exception as e:
         print("SQLite update_last_login note:", e)
+
+    if supabase:
+        try:
+            supabase.table("users").update({"last_login": now}).eq("email", str(user_id)).execute()
+        except Exception:
+            pass

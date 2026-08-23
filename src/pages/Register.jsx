@@ -9,7 +9,19 @@ const pageVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
 export default function Register() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/assistant', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
   return (
     <motion.main
       variants={pageVariants}

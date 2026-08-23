@@ -37,8 +37,8 @@
   --font-micro: 1.125rem;   /* 18px */
 
   /* ── Font Families ── */
-  --font-display: 'Poppins', system-ui, -apple-system, sans-serif;
-  --font-body-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Poppins', system-ui, sans-serif;
+  --font-body-family: 'Plus Jakarta Sans', 'Poppins', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
   /* ── Transitions ── */
