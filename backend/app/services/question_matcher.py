@@ -5,7 +5,7 @@ import numpy as np
 
 from app.utils.normalizer import normalize_text, extract_keywords
 
-CONFIDENCE_THRESHOLD = 0.60
+CONFIDENCE_THRESHOLD = 0.50
 
 class QuestionMatcher:
     def __init__(self):
@@ -24,7 +24,7 @@ class QuestionMatcher:
         self.corpus = []
         self.corpus_item_map = []
 
-        # Add primary questions
+        # 1. Add primary questions
         for item in knowledge_items:
             norm_q = normalize_text(item["question"])
             if norm_q:
@@ -35,7 +35,7 @@ class QuestionMatcher:
                     "type": "primary"
                 })
 
-        # Add variations
+        # 2. Add stored variations
         for var in self.variations:
             norm_var = normalize_text(var["variation"])
             parent_item = next((k for k in knowledge_items if str(k["id"]) == str(var["knowledge_item_id"])), None)
@@ -78,17 +78,20 @@ class QuestionMatcher:
         best_idx = int(np.argmax(similarities))
         best_score = float(similarities[best_idx])
 
-        # Keyword Verification: Require keyword overlap for non-exact matches
+        # Keyword Overlap Verification
         user_kw = extract_keywords(norm_user)
-        matched_kw = extract_keywords(self.corpus[best_idx])
+        matched_kw = extract_keywords(self.corpus_item_map[best_idx]["original_text"])
+        
         if user_kw and matched_kw:
             overlap = len(user_kw.intersection(matched_kw))
             if overlap == 0:
                 best_score = 0.0
             else:
                 overlap_ratio = overlap / float(len(user_kw))
-                if overlap_ratio >= 0.7 and best_score < 0.7:
-                    best_score = max(best_score, 0.75)
+                if overlap_ratio >= 0.5:
+                    best_score = max(best_score, 0.85)
+                elif overlap_ratio < 0.4 and len(user_kw) >= 2:
+                    best_score = min(best_score, 0.30)
 
         if best_score >= CONFIDENCE_THRESHOLD:
             match_type = "strong" if best_score >= 0.75 else "uncertain"
