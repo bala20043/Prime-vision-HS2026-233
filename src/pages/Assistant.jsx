@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import ChatWindow from '../components/ChatWindow';
 import ChatInput from '../components/ChatInput';
@@ -7,6 +7,7 @@ import SuggestionChip from '../components/SuggestionChip';
 import { askQuestion } from '../services/api';
 import { popularSuggestions } from '../data/suggestions';
 import { useLanguage } from '../App';
+import { useAuth } from '../context/AuthContext';
 
 const pageVariants = {
   initial: { opacity: 0 },
@@ -15,10 +16,46 @@ const pageVariants = {
 };
 
 export default function Assistant() {
-  const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [conversations, setConversations] = useState([]);
+  const { user } = useAuth();
   const { t, language } = useLanguage();
+
+  const userKey = user?.email || user?.id || 'default_user';
+  const msgStorageKey = `college_chat_messages_${userKey}`;
+  const convStorageKey = `college_chat_conversations_${userKey}`;
+
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(msgStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [conversations, setConversations] = useState(() => {
+    try {
+      const saved = localStorage.getItem(convStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-persist messages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(msgStorageKey, JSON.stringify(messages));
+    } catch (e) {}
+  }, [messages, msgStorageKey]);
+
+  // Auto-persist conversations sidebar to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(convStorageKey, JSON.stringify(conversations));
+    } catch (e) {}
+  }, [conversations, convStorageKey]);
 
   const handleSend = useCallback(async (question) => {
     // Add user message
@@ -45,9 +82,8 @@ export default function Assistant() {
         const title = question.length > 30 ? question.substring(0, 30) + '…' : question;
         const now = new Date();
         const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        // Avoid duplicates
         if (prev.some(c => c.title === title)) return prev;
-        return [{ title, timestamp }, ...prev].slice(0, 10);
+        return [{ title, timestamp }, ...prev].slice(0, 15);
       });
     } catch (error) {
       const errorMsg = {
@@ -63,11 +99,18 @@ export default function Assistant() {
 
   const handleNewChat = () => {
     setMessages([]);
+    try {
+      localStorage.removeItem(msgStorageKey);
+    } catch (e) {}
   };
 
   const handleClear = () => {
     setMessages([]);
     setConversations([]);
+    try {
+      localStorage.removeItem(msgStorageKey);
+      localStorage.removeItem(convStorageKey);
+    } catch (e) {}
   };
 
   const handleSuggestionClick = (text) => {
