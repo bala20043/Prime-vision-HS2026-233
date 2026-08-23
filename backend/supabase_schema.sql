@@ -106,17 +106,51 @@ CREATE POLICY "Public access messages" ON public.messages FOR ALL TO anon, authe
 -- 9. Automatic Trigger: Sync Supabase Auth (auth.users) -> Supabase Table Editor (public.users)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+    user_name TEXT;
+    user_provider TEXT;
 BEGIN
-  INSERT INTO public.users (id, name, email, auth_provider, created_at)
-  VALUES (
-    new.id::text,
-    COALESCE(new.raw_user_meta_data->>'name', 'Student User'),
-    new.email,
-    COALESCE(new.raw_app_meta_data->>'provider', 'email'),
-    now()
-  )
-  ON CONFLICT (email) DO NOTHING;
-  RETURN new;
+    user_name := COALESCE(
+        new.raw_user_meta_data->>'full_name',
+        new.raw_user_meta_data->>'name',
+        split_part(new.email, '@', 1),
+        'Student User'
+    );
+    user_provider := COALESCE(new.raw_app_meta_data->>'provider', 'google');
+
+    BEGIN
+        INSERT INTO public.users (
+            id,
+            name,
+            email,
+            password_hash,
+            auth_provider,
+            provider_user_id,
+            role,
+            is_active,
+            created_at,
+            last_login
+        )
+        VALUES (
+            new.id::text,
+            user_name,
+            LOWER(new.email),
+            NULL,
+            user_provider,
+            new.id::text,
+            'student',
+            true,
+            now(),
+            now()
+        )
+        ON CONFLICT (email) DO UPDATE SET
+            last_login = now(),
+            provider_user_id = EXCLUDED.provider_user_id;
+    EXCEPTION WHEN OTHERS THEN
+        NULL;
+    END;
+
+    RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
