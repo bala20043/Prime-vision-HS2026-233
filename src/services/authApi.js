@@ -94,3 +94,21 @@ export async function logoutUser() {
 export function startGoogleLogin() {
   window.location.href = `${AUTH_BASE_URL}/google`;
 }
+
+export async function syncGoogleUser(data) {
+  try {
+    const response = await fetch(`${AUTH_BASE_URL}/google-sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    const resData = await response.json();
+    return resData;
+  } catch (error) {
+    console.warn('Backend Google sync note:', error);
+    return null;
+  }
+}

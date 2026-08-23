@@ -46,6 +46,12 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleSyncSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    email: str
+    google_id: Optional[str] = None
+
 # Helper to get current user from session token
 def get_current_user_from_cookie(request: Request) -> Optional[dict]:
     token = request.cookies.get("session_token")
@@ -216,6 +222,29 @@ def get_me(request: Request):
 def logout(response: Response):
     response.delete_cookie(key="session_token")
     return {"success": True, "message": "You have been logged out."}
+
+@app.post("/auth/google-sync")
+def sync_google_user(data: GoogleSyncSchema, response: Response):
+    user = create_user_in_supabase(
+        name=data.name,
+        email=data.email,
+        password=None,
+        auth_provider="google",
+        provider_user_id=data.google_id or data.id
+    )
+    token = create_access_token(user["id"])
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        max_age=7 * 24 * 60 * 60
+    )
+    return {
+        "success": True,
+        "user": user
+    }
 
 @app.get("/auth/google")
 def google_auth():
