@@ -4,7 +4,7 @@
  * Uses credentials: 'include' for httpOnly cookie management.
  */
 
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || '/auth';
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || (import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}/auth` : '/auth');
 
 export async function registerUser(data) {
   try {
