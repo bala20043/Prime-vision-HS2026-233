@@ -153,6 +153,17 @@ def login(data: LoginSchema, request: Request, response: Response):
         local_user = get_user_by_email(email_clean)
         if local_user and local_user.get("password_hash") and verify_password(data.password, local_user["password_hash"]):
             user = local_user
+            # Auto-provision into Supabase Auth for future sign ins
+            if supabase:
+                try:
+                    supabase.auth.admin.create_user({
+                        "email": email_clean,
+                        "password": data.password,
+                        "user_metadata": {"name": local_user.get("name", "Student User")},
+                        "email_confirm": True
+                    })
+                except Exception:
+                    pass
 
     if not user:
         record_failed_attempt(rate_limit_id)

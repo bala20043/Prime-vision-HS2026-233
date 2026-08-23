@@ -2,6 +2,7 @@ import sqlite3
 import os
 from datetime import datetime
 from supabase_client import supabase
+from auth import hash_password
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "college_assistant.db")
 
@@ -43,10 +44,22 @@ def get_user_by_email(email: str):
                 if u.email.lower() == clean_email:
                     name = u.user_metadata.get("name", "Student User") if u.user_metadata else "Student User"
                     auth_provider = u.app_metadata.get("provider", "email") if u.app_metadata else "email"
+                    local_info = None
+                    try:
+                        conn = get_db_connection()
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT password_hash FROM users WHERE email = ?", (clean_email,))
+                        row = cursor.fetchone()
+                        conn.close()
+                        local_info = dict(row) if row else None
+                    except Exception:
+                        pass
+                    
                     return {
                         "id": u.id,
                         "name": name,
                         "email": u.email,
+                        "password_hash": local_info.get("password_hash") if local_info else None,
                         "auth_provider": auth_provider,
                         "created_at": u.created_at,
                         "last_login": getattr(u, "last_sign_in_at", None)
@@ -120,6 +133,7 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
     clean_email = email.lower().strip()
     created_at = datetime.utcnow().isoformat()
     supabase_user = None
+    pwd_hash = hash_password(password) if password else None
 
     # 1. Store directly in Supabase Auth (auth.users)
     if supabase:
@@ -155,6 +169,7 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
             supabase.table("users").upsert({
                 "name": name,
                 "email": clean_email,
+                "password_hash": pwd_hash,
                 "auth_provider": auth_provider,
                 "provider_user_id": provider_user_id,
                 "created_at": created_at,
@@ -171,7 +186,7 @@ def create_user_in_supabase(name: str, email: str, password: str = None, auth_pr
         cursor.execute("""
             INSERT OR REPLACE INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, name, clean_email, "SUPABASE_MANAGED" if password else None, auth_provider, provider_user_id, created_at, created_at))
+        """, (user_id, name, clean_email, pwd_hash, auth_provider, provider_user_id, created_at, created_at))
         conn.commit()
         conn.close()
     except Exception as e:
