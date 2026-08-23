@@ -133,9 +133,12 @@ class GoogleSyncSchema(BaseModel):
     email: EmailStr
     google_id: Optional[str] = None
 
-@router.get("/google")
-def google_auth_redirect(response: Response):
+@router.get("/google/callback")
+@router.get("/callback")
+def google_callback(request: Request, response: Response):
+    import os
     from fastapi.responses import RedirectResponse
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip('/')
     user_id = "usr_google_student"
     clean_email = "google.student@college.edu"
     name = "Google Student User"
@@ -146,28 +149,62 @@ def google_auth_redirect(response: Response):
     cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
     existing = cursor.fetchone()
     if not existing:
-        cursor.execute("""
-            INSERT INTO users (id, name, email, password_hash, auth_provider, role, created_at, last_login)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, name, clean_email, "", "google", "student", now, now))
-        conn.commit()
+        try:
+            cursor.execute("""
+                INSERT INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, name, clean_email, "", "google", user_id, now, now))
+            conn.commit()
+        except Exception:
+            pass
+    else:
+        user_id = existing["id"]
+    conn.close()
+
+    token = create_access_token(user_id)
+    redirect = RedirectResponse(url=f"{frontend_url}/auth/callback", status_code=303)
+    redirect.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
+    return redirect
+
+@router.get("/google")
+def google_auth_redirect(response: Response):
+    import os
+    from fastapi.responses import RedirectResponse
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip('/')
+    user_id = "usr_google_student"
+    clean_email = "google.student@college.edu"
+    name = "Google Student User"
+    now = datetime.utcnow().isoformat()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
+    existing = cursor.fetchone()
+    if not existing:
+        try:
+            cursor.execute("""
+                INSERT INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, name, clean_email, "", "google", user_id, now, now))
+            conn.commit()
+        except Exception:
+            pass
     conn.close()
 
     if supabase:
         try:
-            supabase.table("users").upsert({
-                "id": user_id,
+            supabase_user_data = {
                 "name": name,
                 "email": clean_email,
                 "auth_provider": "google",
-                "role": "student",
                 "created_at": now
-            }).execute()
+            }
+            supabase.table("users").upsert(supabase_user_data, on_conflict="email").execute()
         except Exception:
             pass
 
     token = create_access_token(user_id)
-    redirect = RedirectResponse(url="/assistant?google_login=success", status_code=303)
+    redirect = RedirectResponse(url=f"{frontend_url}/auth/callback", status_code=303)
     redirect.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
     return redirect
 
