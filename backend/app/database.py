@@ -198,6 +198,23 @@ def insert_knowledge_item(item_data: Dict) -> Dict:
         }
     return inserted
 
+def delete_all_knowledge_items():
+    """Deletes all knowledge items and variations, resetting autoincrement sequences."""
+    if supabase:
+        try:
+            supabase.table("question_variations").delete().neq("id", 0).execute()
+            supabase.table("knowledge_items").delete().neq("id", 0).execute()
+        except Exception as e:
+            print("Supabase delete all notice:", e)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM question_variations;")
+    cursor.execute("DELETE FROM knowledge_items;")
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('knowledge_items', 'question_variations');")
+    conn.commit()
+    conn.close()
+
 def get_all_variations() -> List[Dict]:
     if supabase:
         try:

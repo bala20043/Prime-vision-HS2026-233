@@ -143,6 +143,25 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL knowledge base items and clear the dataset?')) return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge/all`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setUploadStatus({
+          type: 'success',
+          message: 'All knowledge base items deleted successfully.',
+          details: 'Knowledge base is now clean and ready for new dataset upload.'
+        });
+        fetchStats();
+        fetchKnowledge();
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
   const handleRunEval = async () => {
     setIsRunningEval(true);
     try {
@@ -330,22 +349,33 @@ export default function Admin() {
 
         {/* Knowledge Management Table */}
         <div className="bg-surface rounded-card border border-hairline shadow-card overflow-hidden">
-          <div className="p-6 border-b border-hairline flex items-center justify-between">
+          <div className="p-6 border-b border-hairline flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 className="text-2xl font-bold text-ink">Active Knowledge Base Items ({knowledgeItems.length})</h2>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-5 py-2.5 bg-indigo hover:bg-indigo-deep text-white font-bold text-small rounded-button flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Add Item
-            </button>
+            <div className="flex items-center gap-3">
+              {knowledgeItems.length > 0 && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-small rounded-button flex items-center gap-2 transition-colors shadow-sm"
+                >
+                  <Trash2 size={18} />
+                  Delete All Items
+                </button>
+              )}
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-5 py-2.5 bg-indigo hover:bg-indigo-deep text-white font-bold text-small rounded-button flex items-center gap-2 transition-colors shadow-sm"
+              >
+                <Plus size={18} />
+                Add Item
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-body border-collapse">
               <thead>
                 <tr className="bg-parchment/60 border-b border-hairline text-small font-bold text-muted-text">
-                  <th className="p-4">ID</th>
+                  <th className="p-4 w-16">ID</th>
                   <th className="p-4">Question</th>
                   <th className="p-4">Official Answer</th>
                   <th className="p-4">Category</th>
@@ -353,9 +383,9 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline text-small">
-                {knowledgeItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-parchment/30">
-                    <td className="p-4 font-mono font-bold text-indigo">{item.id}</td>
+                {knowledgeItems.map((item, index) => (
+                  <tr key={item.id || index} className="hover:bg-parchment/30">
+                    <td className="p-4 font-mono font-bold text-indigo">#{index + 1}</td>
                     <td className="p-4 font-medium text-ink max-w-xs truncate">{item.question}</td>
                     <td className="p-4 text-muted-text max-w-sm truncate">{item.answer}</td>
                     <td className="p-4">

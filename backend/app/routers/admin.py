@@ -74,6 +74,13 @@ def add_knowledge(data: KnowledgeItemSchema):
     reindex_knowledge_base()
     return {"success": True, "item": item, "message": "Knowledge item added and indexed."}
 
+@router.delete("/knowledge/all")
+def delete_all_knowledge_endpoint():
+    from app.database import delete_all_knowledge_items
+    delete_all_knowledge_items()
+    reindex_knowledge_base()
+    return {"success": True, "message": "All knowledge base items deleted and search index reset."}
+
 @router.delete("/knowledge/{id}")
 def delete_knowledge(id: int):
     conn = get_db_connection()
