@@ -11,6 +11,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        bypass(req) {
+          if (req.url.startsWith('/auth/callback')) {
+            return '/index.html';
+          }
+        },
       },
       '/api': {
         target: 'http://127.0.0.1:8000',

@@ -19,7 +19,12 @@ export default function AuthCallback() {
       try {
         setStatusText('Verifying Google authorization...');
 
-        // 1. Check if Supabase OAuth created a session
+        // 1. Clean hash token from browser URL bar if present for security
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          console.log('OAuth token detected in URL hash, processing session...');
+        }
+
+        // 2. Check if Supabase OAuth created a session
         if (supabase && supabase.auth) {
           const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -32,7 +37,7 @@ export default function AuthCallback() {
             const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Google Student';
             const email = session.user.email;
 
-            setStatusText('Establishing secure application session...');
+            setStatusText('Establishing application session...');
 
             // Sync user to Backend DB & Supabase public.users + set session cookie
             const syncRes = await syncGoogleUser({
@@ -51,34 +56,46 @@ export default function AuthCallback() {
             };
 
             saveUserSession(userObj);
+
+            // Clean URL hash
+            if (window.location.hash) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+
             showToast(`Welcome, ${name.split(' ')[0]} 👋`);
             navigate('/assistant', { replace: true });
             return;
           }
         }
 
-        // 2. Check if Backend session cookie exists
+        // 3. Check if Backend session cookie exists
         const currentUser = await getCurrentUser();
         if (currentUser && isMounted) {
           saveUserSession(currentUser);
+          if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
           showToast(`Welcome back, ${currentUser.name.split(' ')[0]} 👋`);
           navigate('/assistant', { replace: true });
           return;
         }
 
-        // 3. Fallback check from localStorage
+        // 4. Fallback check from localStorage
         const saved = localStorage.getItem('college_user');
         if (saved && isMounted) {
           try {
             const parsed = JSON.parse(saved);
             saveUserSession(parsed);
+            if (window.location.hash) {
+              window.history.replaceState(null, '', window.location.pathname);
+            }
             showToast(`Welcome, ${parsed.name.split(' ')[0]} 👋`);
             navigate('/assistant', { replace: true });
             return;
           } catch (e) {}
         }
 
-        // 4. Default fallback for direct Google button click flow
+        // 5. Default fallback for Google button click flow
         const defaultUser = {
           id: `usr_google_${Date.now()}`,
           name: 'Google Student User',
@@ -88,6 +105,9 @@ export default function AuthCallback() {
         };
         await syncGoogleUser(defaultUser);
         saveUserSession(defaultUser);
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
         showToast('Welcome, Google Student 👋');
         navigate('/assistant', { replace: true });
 
