@@ -13,8 +13,23 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('college_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      return !!localStorage.getItem('college_user');
+    } catch (e) {
+      return false;
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -23,6 +38,28 @@ export function AuthProvider({ children }) {
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
+  }, []);
+
+  const saveUserSession = useCallback((userData) => {
+    if (userData) {
+      setUser(userData);
+      setIsAuthenticated(true);
+      try {
+        localStorage.setItem('college_user', JSON.stringify(userData));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+    }
+  }, []);
+
+  const clearUserSession = useCallback(() => {
+    setUser(null);
+    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem('college_user');
+    } catch (e) {
+      console.warn('LocalStorage clear error:', e);
+    }
   }, []);
 
   const handleGoogleSession = useCallback(async (sessionUser) => {
@@ -38,8 +75,7 @@ export function AuthProvider({ children }) {
       auth_provider: 'google'
     };
 
-    setUser(formattedUser);
-    setIsAuthenticated(true);
+    saveUserSession(formattedUser);
 
     // Sync to backend and Supabase Table Editor
     await syncGoogleUser({
@@ -48,7 +84,7 @@ export function AuthProvider({ children }) {
       email: email,
       google_id: googleId
     });
-  }, []);
+  }, [saveUserSession]);
 
   // Check initial session & listen for Google OAuth return
   useEffect(() => {
@@ -70,17 +106,29 @@ export function AuthProvider({ children }) {
         const currentUser = await getCurrentUser();
         if (isMounted) {
           if (currentUser) {
-            setUser(currentUser);
-            setIsAuthenticated(true);
+            saveUserSession(currentUser);
           } else {
-            setUser(null);
-            setIsAuthenticated(false);
+            // Keep local stored session if offline, or sync if logged out
+            const saved = localStorage.getItem('college_user');
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved);
+                setUser(parsed);
+                setIsAuthenticated(true);
+              } catch (e) {}
+            }
           }
         }
       } catch (error) {
         if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
+          const saved = localStorage.getItem('college_user');
+          if (saved) {
+            try {
+              const parsed = JSON.parse(saved);
+              setUser(parsed);
+              setIsAuthenticated(true);
+            } catch (e) {}
+          }
         }
       } finally {
         if (isMounted) {
@@ -106,13 +154,12 @@ export function AuthProvider({ children }) {
       isMounted = false;
       if (subscription) subscription.unsubscribe();
     };
-  }, [handleGoogleSession]);
+  }, [handleGoogleSession, saveUserSession]);
 
   const login = async (credentials) => {
     const response = await loginUser(credentials);
     if (response.success && response.user) {
-      setUser(response.user);
-      setIsAuthenticated(true);
+      saveUserSession(response.user);
     }
     return response;
   };
@@ -120,8 +167,7 @@ export function AuthProvider({ children }) {
   const register = async (userData) => {
     const response = await registerUser(userData);
     if (response.success && response.user) {
-      setUser(response.user);
-      setIsAuthenticated(true);
+      saveUserSession(response.user);
       showToast(response.message || 'Account created successfully. Welcome!');
     }
     return response;
@@ -136,8 +182,7 @@ export function AuthProvider({ children }) {
       }
     }
     await logoutUser();
-    setUser(null);
-    setIsAuthenticated(false);
+    clearUserSession();
     showToast('You have been logged out.');
   };
 
