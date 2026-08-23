@@ -1,0 +1,180 @@
+/* ============================================================
+   Karpagam College of Engineering — Global Styles
+   Academic Ledger Design System
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import './styles/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base Resets ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body-family);
+  font-size: var(--font-body);
+  color: var(--color-ink);
+  background-color: var(--color-parchment);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+h1, .text-hero { font-size: var(--font-hero); font-weight: 700; }
+h2, .text-h2 { font-size: var(--font-h2); font-weight: 700; }
+h3, .text-h3 { font-size: var(--font-h3); font-weight: 700; }
+
+.text-body { font-size: var(--font-body); }
+.text-small { font-size: var(--font-small); }
+.text-micro { font-size: var(--font-micro); }
+
+/* ── Focus States ── */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-button);
+}
+
+/* ── Hairline Divider ── */
+.hairline {
+  border: none;
+  height: 1px;
+  background-color: var(--color-hairline);
+  width: 100%;
+}
+
+/* ── Selection ── */
+::selection {
+  background-color: var(--color-gold-soft);
+  color: var(--color-ink);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted-text);
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.1s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Link Base ── */
+a {
+  color: var(--color-indigo);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-indigo-deep);
+}
+
+/* ── Button Base ── */
+button {
+  font-family: var(--font-body-family);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ── Evidence / Retrieved Text ── */
+.evidence-text {
+  font-family: var(--font-mono);
+  font-size: var(--font-small);
+  letter-spacing: 0.01em;
+  color: var(--color-muted-text);
+}
+
+/* ── Status Dot Animation ── */
+@keyframes pulse-status {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-dot-pulse {
+  animation: pulse-status 2s ease-in-out infinite;
+}
+
+/* ── Loading Dots ── */
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.loading-dot {
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 320ms;
+}
+
+/* ── Seal Ring Draw ── */
+@keyframes draw-ring {
+  from { stroke-dashoffset: 188.5; }
+  to { stroke-dashoffset: 0; }
+}
+
+.seal-ring-draw {
+  animation: draw-ring 300ms ease-out forwards;
+}
+
+/* ── Page Container ── */
+.page-container {
+  max-width: 1720px;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 0 1.25rem;
+  }
+}
