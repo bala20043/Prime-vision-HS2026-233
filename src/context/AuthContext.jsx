@@ -98,7 +98,7 @@ export function AuthProvider({ children }) {
           if (session?.user && isMounted) {
             await handleGoogleSession(session.user);
             setIsLoading(false);
-            if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+            if (window.location.pathname === '/login') {
               window.location.href = '/assistant';
             }
             return;
@@ -148,7 +148,7 @@ export function AuthProvider({ children }) {
       const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && isMounted) {
           await handleGoogleSession(session.user);
-          if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+          if (window.location.pathname === '/login') {
             window.location.href = '/assistant';
           }
         }
