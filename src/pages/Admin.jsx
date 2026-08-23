@@ -154,6 +154,7 @@ export default function Admin() {
           message: 'All knowledge base items deleted successfully.',
           details: 'Knowledge base is now clean and ready for new dataset upload.'
         });
+        setEvalResults(null);
         fetchStats();
         fetchKnowledge();
       }
@@ -163,6 +164,10 @@ export default function Admin() {
   };
 
   const handleRunEval = async () => {
+    if (knowledgeItems.length === 0) {
+      alert('Knowledge base is empty! Please upload a dataset (CSV, XLSX, or JSON) first to run the 25 HackSpora Evaluation Suite.');
+      return;
+    }
     setIsRunningEval(true);
     try {
       const res = await fetch(`${BACKEND_URL}/api/admin/evaluation/run`, { method: 'POST' });
@@ -323,35 +328,43 @@ export default function Admin() {
             </div>
             <button
               onClick={handleRunEval}
-              disabled={isRunningEval}
-              className="px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-button flex items-center gap-2 text-lg shadow-md transition-all disabled:opacity-50"
+              disabled={isRunningEval || knowledgeItems.length === 0}
+              title={knowledgeItems.length === 0 ? 'Upload a dataset to enable accuracy evaluation' : 'Run 25-Question Test Suite'}
+              className="px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-button flex items-center gap-2 text-lg shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isRunningEval ? <RefreshCw className="animate-spin" size={20} /> : <CheckCircle2 size={20} />}
               {isRunningEval ? 'Running Evaluation...' : 'Run 25-Question Test Suite'}
             </button>
           </div>
 
-          {evalResults && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-emerald-50 border border-emerald-200 rounded-card">
-                <div>
-                  <span className="text-micro text-emerald-800 block">Overall Accuracy</span>
-                  <strong className="text-2xl text-emerald-900">{evalResults.overall_accuracy}%</strong>
-                </div>
-                <div>
-                  <span className="text-micro text-emerald-800 block">Known Accuracy</span>
-                  <strong className="text-2xl text-emerald-900">{evalResults.known_accuracy}% ({evalResults.known_correct}/15)</strong>
-                </div>
-                <div>
-                  <span className="text-micro text-emerald-800 block">Unknown Rejection Rate</span>
-                  <strong className="text-2xl text-emerald-900">{evalResults.unknown_rejection_rate}% ({evalResults.unknown_correct}/10)</strong>
-                </div>
-                <div>
-                  <span className="text-micro text-emerald-800 block">Hallucination Rate</span>
-                  <strong className="text-2xl text-emerald-900">{evalResults.hallucination_rate}%</strong>
+          {knowledgeItems.length === 0 ? (
+            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-button text-small flex items-center gap-2 font-medium">
+              <AlertCircle size={18} className="flex-shrink-0 text-amber-600" />
+              <span>Knowledge base is empty. Upload a CSV, XLSX, or JSON dataset file above to unlock accuracy evaluation.</span>
+            </div>
+          ) : (
+            evalResults && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-emerald-50 border border-emerald-200 rounded-card">
+                  <div>
+                    <span className="text-micro text-emerald-800 block">Overall Accuracy</span>
+                    <strong className="text-2xl text-emerald-900">{evalResults.overall_accuracy}%</strong>
+                  </div>
+                  <div>
+                    <span className="text-micro text-emerald-800 block">Known Accuracy</span>
+                    <strong className="text-2xl text-emerald-900">{evalResults.known_accuracy}% ({evalResults.known_correct}/15)</strong>
+                  </div>
+                  <div>
+                    <span className="text-micro text-emerald-800 block">Unknown Rejection Rate</span>
+                    <strong className="text-2xl text-emerald-900">{evalResults.unknown_rejection_rate}% ({evalResults.unknown_correct}/10)</strong>
+                  </div>
+                  <div>
+                    <span className="text-micro text-emerald-800 block">Hallucination Rate</span>
+                    <strong className="text-2xl text-emerald-900">{evalResults.hallucination_rate}%</strong>
+                  </div>
                 </div>
               </div>
-            </div>
+            )
           )}
         </div>
 
