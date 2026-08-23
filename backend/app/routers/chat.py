@@ -26,15 +26,20 @@ def ask_question(data: AskSchema):
     # 1. Detect language if not provided
     lang = data.language if data.language in ["en", "ta", "hi"] else detect_language(data.question)
 
-    # 2. Search Knowledge Base
-    matched_item, confidence, match_type = global_matcher.match(data.question)
+    # 2. Translate non-English user question to English for TF-IDF Knowledge Search
+    query_in_english = data.question
+    if lang != "en":
+        query_in_english = translate_text(data.question, target_lang="en")
 
-    # 3. Known vs Unknown Handling
-    if matched_item and confidence >= 0.55:
+    # 3. Search Knowledge Base using English query
+    matched_item, confidence, match_type = global_matcher.match(query_in_english)
+
+    # 4. Known vs Unknown Handling
+    if matched_item and confidence >= 0.45:
         # Retrieve official stored answer
         stored_answer = matched_item["answer"]
-        # Translate to user language if not English
-        final_answer = translate_text(stored_answer, target_lang=lang)
+        # Translate stored answer to requested language
+        final_answer = translate_text(stored_answer, target_lang=lang) if lang != "en" else stored_answer
 
         # Save to message history if conversation_id provided
         if data.conversation_id:

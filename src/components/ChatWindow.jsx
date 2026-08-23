@@ -23,19 +23,19 @@ export default function ChatWindow({ messages, isLoading, onSuggestionClick }) {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Chat Header */}
-      <div className="px-5 py-3 border-b border-hairline bg-surface flex items-center justify-between">
+      <div className="h-16 px-6 border-b border-hairline bg-surface flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Shield size={18} className="text-gold" />
+          <Shield size={20} className="text-gold flex-shrink-0" />
           <div>
-            <h2 className="text-small font-semibold text-ink font-body">
+            <h2 className="text-small font-bold text-ink font-body leading-tight">
               {t('chatTitle')}
             </h2>
-            <p className="text-micro text-muted-text">
+            <p className="text-micro text-muted-text leading-tight">
               {t('chatDisclaimer')}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-micro text-verified-green">
+        <div className="flex items-center gap-2 text-micro text-verified-green font-medium">
           <span className="status-dot-pulse w-2 h-2 rounded-full bg-verified-green inline-block" />
           <span className="hidden sm:inline">{t('chatStatus')}</span>
         </div>

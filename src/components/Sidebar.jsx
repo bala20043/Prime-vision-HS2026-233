@@ -23,7 +23,7 @@ export default function Sidebar({ conversations, onNewChat, onClear, onSelectCon
   return (
     <aside className="hidden lg:flex flex-col w-80 border-r border-hairline bg-surface">
       {/* New Chat */}
-      <div className="p-4 border-b border-hairline">
+      <div className="h-16 px-4 border-b border-hairline flex items-center justify-center bg-surface">
         <button
           onClick={onNewChat}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5

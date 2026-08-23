@@ -81,7 +81,7 @@ export default function Assistant() {
       animate="animate"
       exit="exit"
       className="flex flex-col"
-      style={{ height: 'calc(100vh - 80px)' }}
+      style={{ height: 'calc(100vh - 96px)' }}
     >
       <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
