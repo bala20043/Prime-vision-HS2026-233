@@ -13,6 +13,7 @@ import About from './pages/About';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
 // ── Language Context ──
 const LanguageContext = createContext();
@@ -100,6 +101,14 @@ function AnimatedRoutes() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
             </ProtectedRoute>
           }
         />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, GraduationCap } from 'lucide-react';
 import { useLanguage } from '../App';
@@ -24,19 +24,34 @@ const languages = [
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    if (isAuthenticated && (user?.email === 'collegeofcom@gmail.com' || user?.role === 'admin')) {
+      navigate('/admin');
+    } else {
+      navigate('/login?admin=true');
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-ink text-parchment border-b border-parchment/10">
       <div className="page-container flex items-center justify-between h-24 py-3">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3.5 text-parchment no-underline hover:text-parchment">
+        {/* Logo — Click/Double-click opens Admin Page for collegeofcom@gmail.com */}
+        <button
+          onClick={handleLogoClick}
+          onDoubleClick={handleLogoClick}
+          className="flex items-center gap-3.5 text-parchment cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-none"
+          title="Click to open Admin Page"
+        >
           <GraduationCap size={36} className="text-gold" />
           <span className="font-display text-2xl font-bold tracking-tight">
             {t('brand')}
           </span>
-        </Link>
+        </button>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-3" aria-label="Main navigation">

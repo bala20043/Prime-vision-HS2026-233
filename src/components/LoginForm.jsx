@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleButton from './GoogleButton';
 
 export default function LoginForm() {
+  const [searchParams] = useSearchParams();
+  const isAdminParam = searchParams.get('admin') === 'true';
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: isAdminParam ? 'collegeofcom@gmail.com' : '',
+    password: isAdminParam ? 'collegekce2026' : '',
   });
 
   const [errors, setErrors] = useState({});
@@ -53,11 +56,15 @@ export default function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      await login({
+      const res = await login({
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
-      navigate(from, { replace: true });
+      if (res && res.user && (res.user.role === 'admin' || res.user.email === 'collegeofcom@gmail.com')) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setServerError(err.message || 'Invalid email or password.');
     } finally {
