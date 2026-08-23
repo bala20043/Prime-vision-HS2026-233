@@ -183,10 +183,13 @@ def google_sync(data: GoogleSyncSchema, response: Response):
     existing = cursor.fetchone()
 
     if not existing:
-        cursor.execute("""
-            INSERT INTO users (id, name, email, password_hash, auth_provider, role, created_at, last_login)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, data.name, clean_email, "", "google", "student", now, now))
+        try:
+            cursor.execute("""
+                INSERT INTO users (id, name, email, password_hash, auth_provider, provider_user_id, created_at, last_login)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (user_id, data.name, clean_email, "", "google", data.google_id or user_id, now, now))
+        except Exception as e:
+            print("SQLite user insert notice:", e)
     else:
         user_id = existing["id"]
         cursor.execute("UPDATE users SET last_login = ? WHERE email = ?", (now, clean_email))
@@ -196,19 +199,22 @@ def google_sync(data: GoogleSyncSchema, response: Response):
 
     if supabase:
         try:
-            supabase.table("users").upsert({
-                "id": user_id,
+            supabase_user_data = {
                 "name": data.name,
                 "email": clean_email,
                 "auth_provider": "google",
-                "role": "student",
                 "created_at": now
-            }).execute()
+            }
+            if str(data.id).isdigit():
+                supabase_user_data["id"] = int(data.id)
+            supabase.table("users").upsert(supabase_user_data, on_conflict="email").execute()
+            print("Successfully synced Google user to Supabase public.users!")
         except Exception as e:
             print("Supabase Google sync notice:", e)
 
     token = create_access_token(user_id)
-    response.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
+    if response:
+        response.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
 
     return {
         "success": True,

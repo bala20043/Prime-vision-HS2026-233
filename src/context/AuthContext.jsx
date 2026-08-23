@@ -98,6 +98,9 @@ export function AuthProvider({ children }) {
           if (session?.user && isMounted) {
             await handleGoogleSession(session.user);
             setIsLoading(false);
+            if (window.location.pathname === '/login' || window.location.pathname === '/') {
+              window.location.href = '/assistant';
+            }
             return;
           }
         }
@@ -143,8 +146,11 @@ export function AuthProvider({ children }) {
     let subscription = null;
     if (supabase && supabase.auth) {
       const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user && isMounted) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && isMounted) {
           await handleGoogleSession(session.user);
+          if (window.location.pathname === '/login' || window.location.pathname === '/') {
+            window.location.href = '/assistant';
+          }
         }
       });
       subscription = listener?.subscription;
