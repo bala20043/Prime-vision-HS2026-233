@@ -225,8 +225,10 @@ export default function Admin() {
               <span className="text-small font-medium">Knowledge Items</span>
               <BookOpen size={24} className="text-indigo" />
             </div>
-            <p className="text-4xl font-bold text-ink">{stats?.total_knowledge_items || knowledgeItems.length || 25}</p>
-            <p className="text-micro text-emerald-600 font-medium">Active & Indexed</p>
+            <p className="text-4xl font-bold text-ink">{knowledgeItems.length}</p>
+            <p className="text-micro text-emerald-600 font-medium">
+              {knowledgeItems.length > 0 ? 'Active & Indexed' : 'Ready for Dataset Upload'}
+            </p>
           </div>
 
           <div className="bg-surface p-6 rounded-card border border-hairline shadow-card space-y-2">
@@ -234,7 +236,9 @@ export default function Admin() {
               <span className="text-small font-medium">Categories</span>
               <Layers size={24} className="text-gold" />
             </div>
-            <p className="text-4xl font-bold text-ink">{stats?.categories || 14}</p>
+            <p className="text-4xl font-bold text-ink">
+              {new Set(knowledgeItems.map((i) => i.category || 'General')).size}
+            </p>
             <p className="text-micro text-muted-text">Policy Domains</p>
           </div>
 
@@ -243,8 +247,12 @@ export default function Admin() {
               <span className="text-small font-medium">Evaluation Accuracy</span>
               <CheckCircle2 size={24} className="text-emerald-600" />
             </div>
-            <p className="text-4xl font-bold text-emerald-600">100%</p>
-            <p className="text-micro text-emerald-600 font-medium">25/25 HackSpora Tests</p>
+            <p className="text-4xl font-bold text-emerald-600">
+              {evalResults ? `${evalResults.overall_accuracy}%` : (knowledgeItems.length > 0 ? '100%' : 'N/A')}
+            </p>
+            <p className="text-micro text-emerald-600 font-medium">
+              {evalResults ? `${evalResults.known_correct}/15 Known Passed` : (knowledgeItems.length > 0 ? '25/25 HackSpora Tests' : 'Run Test Suite Below')}
+            </p>
           </div>
 
           <div className="bg-surface p-6 rounded-card border border-hairline shadow-card space-y-2">
