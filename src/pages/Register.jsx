@@ -1,17 +1,16 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import RegisterForm from '../components/RegisterForm';
-import VerificationSeal from '../components/VerificationSeal';
 import { GraduationCap, BookOpen, ShieldCheck } from 'lucide-react';
+
+import RegisterForm from '../components/RegisterForm';
+import { useAuth } from '../context/AuthContext';
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -22,6 +21,7 @@ export default function Register() {
       navigate('/assistant', { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
+
   return (
     <motion.main
       variants={pageVariants}

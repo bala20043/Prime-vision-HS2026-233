@@ -1,18 +1,17 @@
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { GraduationCap, Lock } from 'lucide-react';
+
 import LoginForm from '../components/LoginForm';
 import VerificationSeal from '../components/VerificationSeal';
-import { GraduationCap, ShieldCheck, Lock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
-
-import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [searchParams] = useSearchParams();
