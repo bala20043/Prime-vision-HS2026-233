@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, BookOpen, Calendar, ArrowLeft } from 'lucide-react';
+import { Search, X, BookOpen, Calendar, ArrowLeft, Database } from 'lucide-react';
 import KnowledgeCard from '../components/KnowledgeCard';
-import { knowledgeCategories, iconMap } from '../data/knowledge';
+import { iconMap } from '../data/knowledge';
 import { useLanguage } from '../App';
 
 const pageVariants = {
@@ -14,12 +14,24 @@ const pageVariants = {
 export default function Knowledge() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [items, setItems] = useState([]);
   const { t } = useLanguage();
 
-  const filteredCategories = knowledgeCategories.filter((cat) =>
-    cat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cat.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cat.category.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetch('/api/admin/knowledge')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.items) {
+          setItems(data.items);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filteredItems = items.filter((item) =>
+    item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.category && item.category.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -156,21 +168,24 @@ export default function Knowledge() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              {filteredCategories.length === 0 ? (
-                <div className="text-center py-16">
-                  <p className="text-body text-muted-text">
-                    No matching categories found.
+              {filteredItems.length === 0 ? (
+                <div className="text-center py-20 bg-surface rounded-card border border-hairline max-w-xl mx-auto space-y-4">
+                  <Database size={48} className="mx-auto text-muted-text/40" />
+                  <h3 className="font-display text-2xl font-bold text-ink">Knowledge Base Empty</h3>
+                  <p className="text-small text-muted-text max-w-md mx-auto">
+                    No knowledge base questions have been uploaded yet. Log in as Admin to upload a CSV, XLSX, or JSON dataset.
                   </p>
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {filteredCategories.map((cat, i) => (
-                    <KnowledgeCard
-                      key={cat.id}
-                      category={cat}
-                      index={i}
-                      onClick={setSelectedCategory}
-                    />
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredItems.map((item, i) => (
+                    <div key={item.id || i} className="bg-surface p-6 rounded-card border border-hairline shadow-card space-y-3">
+                      <span className="px-3 py-1 bg-parchment border border-hairline rounded-pill text-micro font-medium text-ink">
+                        {item.category || 'General'}
+                      </span>
+                      <h4 className="font-display text-xl font-bold text-ink">{item.question}</h4>
+                      <p className="text-body text-muted-text">{item.answer}</p>
+                    </div>
                   ))}
                 </div>
               )}
