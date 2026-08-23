@@ -1,8 +1,24 @@
+import { supabase } from '../services/supabaseClient';
 import { startGoogleLogin } from '../services/authApi';
 
 export default function GoogleButton({ label = "Continue with Google" }) {
-  const handleClick = () => {
-    startGoogleLogin();
+  const handleClick = async () => {
+    try {
+      if (supabase && supabase.auth) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/assistant`,
+          },
+        });
+        if (error) throw error;
+      } else {
+        startGoogleLogin();
+      }
+    } catch (err) {
+      console.warn('Supabase JS OAuth fallback to backend endpoint:', err.message);
+      startGoogleLogin();
+    }
   };
 
   return (
