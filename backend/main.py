@@ -50,7 +50,14 @@ app.include_router(chat_router)
 app.include_router(admin_router)
 
 @app.get("/")
-def root():
+def root(request: Request):
+    error = request.query_params.get("error")
+    error_desc = request.query_params.get("error_description", "OAuth session expired")
+    if error or "error_code" in request.query_params:
+        from fastapi.responses import RedirectResponse
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip('/')
+        return RedirectResponse(url=f"{frontend_url}/auth/callback?error={error_desc}", status_code=303)
+
     return {
         "status": "online",
         "service": "AI College Knowledge Assistant — Backend API",
