@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const BACKEND_URL = 'http://127.0.0.1:8000';
+
 export default function Admin() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
@@ -29,9 +31,11 @@ export default function Admin() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/admin/stats');
-      const data = await res.json();
-      if (data.success) setStats(data);
+      const res = await fetch(`${BACKEND_URL}/api/admin/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) setStats(data);
+      }
     } catch (e) {
       console.warn('Fetch stats note:', e);
     }
@@ -39,9 +43,11 @@ export default function Admin() {
 
   const fetchKnowledge = async () => {
     try {
-      const res = await fetch('/api/admin/knowledge');
-      const data = await res.json();
-      if (data.success) setKnowledgeItems(data.items);
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) setKnowledgeItems(data.items);
+      }
     } catch (e) {
       console.warn('Fetch knowledge note:', e);
     }
@@ -62,10 +68,11 @@ export default function Admin() {
     formData.append('file', selectedFile);
 
     try {
-      const res = await fetch('/api/admin/dataset/upload', {
+      const res = await fetch(`${BACKEND_URL}/api/admin/dataset/upload`, {
         method: 'POST',
         body: formData,
       });
+      
       const data = await res.json();
       if (res.ok && data.success) {
         setUploadStatus({
@@ -88,7 +95,7 @@ export default function Admin() {
   const handleAddItem = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/admin/knowledge', {
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newItem),
@@ -109,7 +116,7 @@ export default function Admin() {
     e.preventDefault();
     if (!selectedItemId || !newVariation.trim()) return;
     try {
-      const res = await fetch(`/api/admin/knowledge/${selectedItemId}/variations`, {
+      const res = await fetch(`${BACKEND_URL}/api/admin/knowledge/${selectedItemId}/variations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ variation: newVariation.trim(), language: 'en' }),
@@ -128,7 +135,7 @@ export default function Admin() {
   const handleDeleteItem = async (id) => {
     if (!window.confirm('Delete this knowledge item?')) return;
     try {
-      await fetch(`/api/admin/knowledge/${id}`, { method: 'DELETE' });
+      await fetch(`${BACKEND_URL}/api/admin/knowledge/${id}`, { method: 'DELETE' });
       fetchStats();
       fetchKnowledge();
     } catch (e) {
@@ -139,7 +146,7 @@ export default function Admin() {
   const handleRunEval = async () => {
     setIsRunningEval(true);
     try {
-      const res = await fetch('/api/admin/evaluation/run', { method: 'POST' });
+      const res = await fetch(`${BACKEND_URL}/api/admin/evaluation/run`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setEvalResults(data);
