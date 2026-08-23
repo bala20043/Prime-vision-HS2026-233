@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import LoadingIndicator from './LoadingIndicator';
 
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -16,6 +16,11 @@ export default function ProtectedRoute({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Prevent student users from accessing /admin
+  if (location.pathname === '/admin' && user?.role === 'student' && user?.email !== 'collegeofcom@gmail.com') {
+    return <Navigate to="/assistant" replace />;
   }
 
   return children;

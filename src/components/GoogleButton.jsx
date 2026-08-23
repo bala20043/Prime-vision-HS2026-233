@@ -32,7 +32,7 @@ export default function GoogleButton({ label = "Continue with Google" }) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: `${window.location.origin}/assistant`,
+            redirectTo: `${window.location.origin}/auth/callback`,
           },
         });
 

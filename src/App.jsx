@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import AuthCallback from './pages/AuthCallback';
 
 // ── Language Context ──
 const LanguageContext = createContext();
@@ -70,6 +71,7 @@ function AnimatedRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/about" element={<About />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protected Routes */}
         <Route
