@@ -1,40 +1,40 @@
 /* ============================================================
    AI College Knowledge Assistant — Design Tokens
-   Academic Ledger Design System (Enhanced Scale)
+   Vibrant Modern Slate & Amber Gold Theme System
    ============================================================ */
 
 :root {
-  /* ── Color Palette ── */
-  --color-ink: #141B2E;
-  --color-parchment: #F7F5EF;
+  /* ── Color Palette (Attractive Modern Theme) ── */
+  --color-ink: #0F172A;
+  --color-parchment: #F8FAFC;
   --color-surface: #FFFFFF;
-  --color-indigo: #233A66;
-  --color-indigo-deep: #16233F;
-  --color-gold: #B8912F;
-  --color-gold-soft: #E9DCB6;
-  --color-verified-green: #1F6E52;
-  --color-unknown-slate: #5B6478;
-  --color-error-rust: #A23B2E;
-  --color-hairline: #DEDACD;
-  --color-muted-text: #6B7280;
+  --color-indigo: #1E1B4B;
+  --color-indigo-deep: #0F172A;
+  --color-gold: #D97706;
+  --color-gold-soft: #FEF3C7;
+  --color-verified-green: #059669;
+  --color-unknown-slate: #475569;
+  --color-error-rust: #DC2626;
+  --color-hairline: #E2E8F0;
+  --color-muted-text: #475569;
 
   /* ── Shadows ── */
-  --shadow-sm: 0 1px 3px rgba(20, 27, 46, 0.08);
-  --shadow-card: 0 4px 20px rgba(20, 27, 46, 0.1);
-  --shadow-elevated: 0 14px 36px rgba(20, 27, 46, 0.14);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+  --shadow-elevated: 0 20px 40px -8px rgba(15, 23, 42, 0.16);
 
   /* ── Radii ── */
-  --radius-card: 12px;
-  --radius-button: 8px;
+  --radius-card: 16px;
+  --radius-button: 10px;
   --radius-pill: 999px;
 
-  /* ── Type Scale (Super-Sized High Legibility Scale) ── */
-  --font-hero: 6rem;        /* 96px */
-  --font-h2: 4rem;         /* 64px */
-  --font-h3: 2.75rem;       /* 44px */
-  --font-body: 1.625rem;    /* 26px */
-  --font-small: 1.375rem;   /* 22px */
-  --font-micro: 1.125rem;   /* 18px */
+  /* ── Type Scale ── */
+  --font-hero: 5.5rem;      /* 88px */
+  --font-h2: 3.75rem;       /* 60px */
+  --font-h3: 2.5rem;        /* 40px */
+  --font-body: 1.5rem;      /* 24px */
+  --font-small: 1.25rem;    /* 20px */
+  --font-micro: 1.0625rem;  /* 17px */
 
   /* ── Font Families ── */
   --font-display: 'Plus Jakarta Sans', 'Poppins', system-ui, sans-serif;
@@ -47,17 +47,17 @@
   --transition-smooth: 220ms ease-out;
 
   /* ── Focus ── */
-  --focus-ring: 0 0 0 2px var(--color-gold);
+  --focus-ring: 0 0 0 3px rgba(217, 119, 6, 0.3);
 }
 
 /* ── Mobile Type Scale ── */
 @media (max-width: 768px) {
   :root {
-    --font-hero: 3.75rem;
-    --font-h2: 2.75rem;
-    --font-h3: 2rem;
-    --font-body: 1.375rem;
-    --font-small: 1.1875rem;
+    --font-hero: 3.5rem;
+    --font-h2: 2.5rem;
+    --font-h3: 1.875rem;
+    --font-body: 1.25rem;
+    --font-small: 1.125rem;
     --font-micro: 1rem;
   }
 }
