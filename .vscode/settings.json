@@ -1,0 +1,4 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "stylelint.validate": ["css", "postcss"]
+}
