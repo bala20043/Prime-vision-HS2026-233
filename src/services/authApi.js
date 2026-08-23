@@ -68,7 +68,7 @@ export async function getCurrentUser() {
       return null;
     }
     const resData = await response.json();
-    return resData.user;
+    return resData.authenticated ? resData.user : null;
   } catch (error) {
     return null;
   }

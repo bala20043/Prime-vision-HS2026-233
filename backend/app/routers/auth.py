@@ -105,10 +105,10 @@ def login(data: LoginSchema, response: Response):
 def me(request: Request):
     token = request.cookies.get("session_token")
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired.")
+        return {"success": False, "authenticated": False, "user": None}
     user_id = decode_access_token(token)
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired.")
+        return {"success": False, "authenticated": False, "user": None}
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -117,10 +117,10 @@ def me(request: Request):
     conn.close()
 
     if not row:
-        return {"success": True, "user": {"id": user_id, "name": "Student User", "email": "student@college.edu", "role": "student"}}
+        return {"success": True, "authenticated": True, "user": {"id": user_id, "name": "Student User", "email": "student@college.edu", "role": "student"}}
 
     u = dict(row)
-    return {"success": True, "user": {"id": u["id"], "name": u["name"], "email": u["email"], "role": u.get("role", "student")}}
+    return {"success": True, "authenticated": True, "user": {"id": u["id"], "name": u["name"], "email": u["email"], "role": u.get("role", "student")}}
 
 @router.post("/logout")
 def logout(response: Response):
