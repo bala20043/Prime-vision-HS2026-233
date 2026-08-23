@@ -20,7 +20,7 @@ export default function GoogleButton({ label = "Continue with Google" }) {
       await loginGoogle(googleUser);
     }
     if (showToast) {
-      showToast('Signed in with Google');
+      showToast('Signed in as google.student@college.edu');
     }
     navigate('/assistant', { replace: true });
   };
@@ -35,22 +35,31 @@ export default function GoogleButton({ label = "Continue with Google" }) {
             redirectTo: `${window.location.origin}/assistant`,
           },
         });
+
         if (error) {
-          console.warn('Supabase OAuth notice, falling back to direct login:', error.message);
+          console.warn('Supabase OAuth notice, logging in as Google Student:', error.message);
           await fallbackLogin();
           return;
         }
+
         if (data?.url) {
           window.location.href = data.url;
+          return;
         }
+
+        // Safety fallback: If no browser redirect occurs within 1.5s, log in directly
+        setTimeout(async () => {
+          const saved = localStorage.getItem('college_user');
+          if (!saved && (window.location.pathname === '/login' || window.location.pathname === '/')) {
+            await fallbackLogin();
+          }
+        }, 1500);
       } else {
         await fallbackLogin();
       }
     } catch (err) {
-      console.warn('Google OAuth Exception, falling back to direct login:', err);
+      console.warn('Google OAuth Exception, logging in as Google Student:', err);
       await fallbackLogin();
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -83,7 +92,7 @@ export default function GoogleButton({ label = "Continue with Google" }) {
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
         />
       </svg>
-      <span>{isSubmitting ? 'Signing in with Google...' : label}</span>
+      <span>{isSubmitting ? 'Signing in...' : label}</span>
     </button>
   );
 }
