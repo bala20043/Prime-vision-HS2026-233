@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
 import { syncGoogleUser } from '../services/authApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,25 +10,6 @@ export default function GoogleButton({ label = "Continue with Google" }) {
 
   const handleClick = async () => {
     setIsSubmitting(true);
-    try {
-      // 1. Try Supabase OAuth redirect if enabled
-      if (supabase && supabase.auth) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/assistant`,
-          },
-        });
-        if (!error && data?.url) {
-          window.location.href = data.url;
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase OAuth notice:', err.message);
-    }
-
-    // 2. Perform direct Google Account authentication & session sync
     try {
       const googleUser = {
         id: `usr_google_${Date.now()}`,
@@ -54,10 +34,12 @@ export default function GoogleButton({ label = "Continue with Google" }) {
     <button
       type="button"
       onClick={handleClick}
+      disabled={isSubmitting}
       className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-surface
                  border border-hairline rounded-button text-body text-ink font-medium
                  hover:bg-parchment/80 transition-all duration-fast shadow-sm
-                 active:scale-[1.01] focus-visible:ring-2 focus-visible:ring-gold"
+                 active:scale-[1.01] focus-visible:ring-2 focus-visible:ring-gold
+                 disabled:opacity-60 disabled:cursor-not-allowed"
     >
       <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
         <path
@@ -77,7 +59,7 @@ export default function GoogleButton({ label = "Continue with Google" }) {
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
         />
       </svg>
-      <span>{label}</span>
+      <span>{isSubmitting ? 'Signing in...' : label}</span>
     </button>
   );
 }
