@@ -23,28 +23,29 @@ def ask_question(data: AskSchema):
     if not data.question or not data.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
-    # 1. Detect language if not provided
-    lang = data.language if data.language in ["en", "ta", "hi"] else detect_language(data.question)
+    # 1. Detect actual language of input text (Tamil, Hindi, English)
+    detected_lang = detect_language(data.question)
+    response_lang = detected_lang if detected_lang in ["ta", "hi"] else (data.language if data.language in ["ta", "hi"] else "en")
 
-    # 2. Translate non-English user question to English for TF-IDF Knowledge Search
+    # 2. Convert non-English question to English using deep-translator for TF-IDF keyword search
     query_in_english = data.question
-    if lang != "en":
+    if detected_lang != "en":
         query_in_english = translate_text(data.question, target_lang="en")
 
     # 3. Search Knowledge Base using English query
     matched_item, confidence, match_type = global_matcher.match(query_in_english)
 
     # 4. Known vs Unknown Handling
-    if matched_item and confidence >= 0.45:
+    if matched_item and confidence >= 0.40:
         # Retrieve official stored answer
         stored_answer = matched_item["answer"]
-        # Translate stored answer to requested language
-        final_answer = translate_text(stored_answer, target_lang=lang) if lang != "en" else stored_answer
+        # Translate stored answer to user's response language using deep-translator
+        final_answer = translate_text(stored_answer, target_lang=response_lang) if response_lang != "en" else stored_answer
 
         # Save to message history if conversation_id provided
         if data.conversation_id:
-            save_chat_message(data.conversation_id, "user", data.question, "known", matched_item["id"], lang)
-            save_chat_message(data.conversation_id, "assistant", final_answer, "known", matched_item["id"], lang)
+            save_chat_message(data.conversation_id, "user", data.question, "known", matched_item["id"], response_lang)
+            save_chat_message(data.conversation_id, "assistant", final_answer, "known", matched_item["id"], response_lang)
 
         return {
             "success": True,
@@ -54,15 +55,15 @@ def ask_question(data: AskSchema):
             "category": matched_item.get("category", "General"),
             "knowledge_item_id": matched_item["id"],
             "confidence": confidence,
-            "language": lang
+            "language": response_lang
         }
     else:
         # Unknown Protection: Zero-Hallucination Policy
-        unknown_msg = get_unknown_response(lang)
+        unknown_msg = get_unknown_response(response_lang)
 
         if data.conversation_id:
-            save_chat_message(data.conversation_id, "user", data.question, "unknown", None, lang)
-            save_chat_message(data.conversation_id, "assistant", unknown_msg, "unknown", None, lang)
+            save_chat_message(data.conversation_id, "user", data.question, "unknown", None, response_lang)
+            save_chat_message(data.conversation_id, "assistant", unknown_msg, "unknown", None, response_lang)
 
         return {
             "success": True,
@@ -72,7 +73,7 @@ def ask_question(data: AskSchema):
             "category": None,
             "knowledge_item_id": None,
             "confidence": 0,
-            "language": lang
+            "language": response_lang
         }
 
 def save_chat_message(conversation_id: int, role: str, content: str, answer_type: str, item_id: Optional[int], lang: str):
