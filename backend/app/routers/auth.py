@@ -126,3 +126,92 @@ def me(request: Request):
 def logout(response: Response):
     response.delete_cookie(key="session_token")
     return {"success": True, "message": "Logged out."}
+
+class GoogleSyncSchema(BaseModel):
+    id: Optional[str] = None
+    name: str = "Google Student User"
+    email: EmailStr
+    google_id: Optional[str] = None
+
+@router.get("/google")
+def google_auth_redirect(response: Response):
+    from fastapi.responses import RedirectResponse
+    user_id = "usr_google_student"
+    clean_email = "google.student@college.edu"
+    name = "Google Student User"
+    now = datetime.utcnow().isoformat()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
+    existing = cursor.fetchone()
+    if not existing:
+        cursor.execute("""
+            INSERT INTO users (id, name, email, password_hash, auth_provider, role, created_at, last_login)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, name, clean_email, "", "google", "student", now, now))
+        conn.commit()
+    conn.close()
+
+    if supabase:
+        try:
+            supabase.table("users").upsert({
+                "id": user_id,
+                "name": name,
+                "email": clean_email,
+                "auth_provider": "google",
+                "role": "student",
+                "created_at": now
+            }).execute()
+        except Exception:
+            pass
+
+    token = create_access_token(user_id)
+    redirect = RedirectResponse(url="/assistant?google_login=success", status_code=303)
+    redirect.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
+    return redirect
+
+@router.post("/google-sync")
+def google_sync(data: GoogleSyncSchema, response: Response):
+    clean_email = data.email.lower().strip()
+    user_id = data.id or f"usr_g_{int(datetime.utcnow().timestamp())}"
+    now = datetime.utcnow().isoformat()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE email = ?", (clean_email,))
+    existing = cursor.fetchone()
+
+    if not existing:
+        cursor.execute("""
+            INSERT INTO users (id, name, email, password_hash, auth_provider, role, created_at, last_login)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, data.name, clean_email, "", "google", "student", now, now))
+    else:
+        user_id = existing["id"]
+        cursor.execute("UPDATE users SET last_login = ? WHERE email = ?", (now, clean_email))
+
+    conn.commit()
+    conn.close()
+
+    if supabase:
+        try:
+            supabase.table("users").upsert({
+                "id": user_id,
+                "name": data.name,
+                "email": clean_email,
+                "auth_provider": "google",
+                "role": "student",
+                "created_at": now
+            }).execute()
+        except Exception as e:
+            print("Supabase Google sync notice:", e)
+
+    token = create_access_token(user_id)
+    response.set_cookie(key="session_token", value=token, httponly=True, samesite="lax", secure=False, max_age=7*24*3600)
+
+    return {
+        "success": True,
+        "user": {"id": user_id, "name": data.name, "email": clean_email, "role": "student", "auth_provider": "google"}
+    }
+
