@@ -4,11 +4,18 @@
  * Uses credentials: 'include' for httpOnly cookie management.
  */
 
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_URL || (import.meta.env.VITE_BACKEND_URL ? `${import.meta.env.VITE_BACKEND_URL}/auth` : '/auth');
+const getAuthBaseUrl = () => {
+  if (import.meta.env.VITE_AUTH_API_URL) return import.meta.env.VITE_AUTH_API_URL.replace(/\/$/, '');
+  if (import.meta.env.VITE_BACKEND_URL) return `${import.meta.env.VITE_BACKEND_URL.replace(/\/$/, '')}/auth`;
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://127.0.0.1:8000/auth';
+  }
+  return 'https://college-chatbot-backend-cbox.onrender.com/auth';
+};
 
 export async function registerUser(data) {
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/register`, {
+    const response = await fetch(`${getAuthBaseUrl()}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +39,7 @@ export async function registerUser(data) {
 
 export async function loginUser(data) {
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/login`, {
+    const response = await fetch(`${getAuthBaseUrl()}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +63,7 @@ export async function loginUser(data) {
 
 export async function getCurrentUser() {
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/me`, {
+    const response = await fetch(`${getAuthBaseUrl()}/me`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -76,7 +83,7 @@ export async function getCurrentUser() {
 
 export async function logoutUser() {
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/logout`, {
+    const response = await fetch(`${getAuthBaseUrl()}/logout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -92,12 +99,12 @@ export async function logoutUser() {
 }
 
 export function startGoogleLogin() {
-  window.location.href = `${AUTH_BASE_URL}/google`;
+  window.location.href = `${getAuthBaseUrl()}/google`;
 }
 
 export async function syncGoogleUser(data) {
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/google-sync`, {
+    const response = await fetch(`${getAuthBaseUrl()}/google-sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
