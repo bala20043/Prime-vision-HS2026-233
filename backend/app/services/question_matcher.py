@@ -66,35 +66,36 @@ class QuestionMatcher:
         if not norm_user:
             return None, 0.0, "unsupported"
 
-        # Stage 1 & 2: Exact & Variation Match
+        # Stage 1: Exact Match
         for idx, mapped in enumerate(self.corpus_item_map):
             if mapped["original_text"].lower().strip() == user_question.lower().strip() or self.corpus[idx] == norm_user:
                 return mapped["item"], 1.00, "exact"
 
-        # Stage 3 & 4: TF-IDF Cosine Similarity
+        # Stage 2: Substring/Contains Match Fallback
+        for idx, mapped in enumerate(self.corpus_item_map):
+            q_norm = self.corpus[idx]
+            if len(norm_user) >= 3 and (norm_user in q_norm or q_norm in norm_user):
+                return mapped["item"], 0.90, "substring"
+
+        # Stage 3: TF-IDF Cosine Similarity
         user_vector = self.vectorizer.transform([norm_user])
         similarities = cosine_similarity(user_vector, self.tfidf_matrix).flatten()
 
         best_idx = int(np.argmax(similarities))
         best_score = float(similarities[best_idx])
 
-        # Keyword Overlap Verification
+        # Keyword Overlap Boosting
         user_kw = extract_keywords(norm_user)
         matched_kw = extract_keywords(self.corpus_item_map[best_idx]["original_text"])
-        
+
         if user_kw and matched_kw:
             overlap = len(user_kw.intersection(matched_kw))
-            if overlap == 0:
-                best_score = 0.0
-            else:
+            if overlap > 0:
                 overlap_ratio = overlap / float(len(user_kw))
-                if overlap_ratio >= 0.5:
-                    best_score = max(best_score, 0.85)
-                elif overlap_ratio < 0.4 and len(user_kw) >= 2:
-                    best_score = min(best_score, 0.30)
+                best_score = max(best_score, overlap_ratio * 0.75)
 
-        if best_score >= CONFIDENCE_THRESHOLD:
-            match_type = "strong" if best_score >= 0.75 else "uncertain"
+        if best_score >= 0.25:
+            match_type = "strong" if best_score >= 0.60 else "uncertain"
             return self.corpus_item_map[best_idx]["item"], round(best_score, 4), match_type
 
         return None, round(best_score, 4), "unsupported"

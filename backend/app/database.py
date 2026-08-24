@@ -120,6 +120,26 @@ def init_db():
             );
         """)
 
+        # Seed default knowledge items if empty
+        cursor.execute("SELECT COUNT(*) FROM knowledge_items")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            now_str = datetime.utcnow().isoformat()
+            default_items = [
+                ("What is the minimum attendance requirement for writing exams?", "Students must maintain a minimum of 75% overall attendance to be eligible for end-semester examinations. Students with attendance between 65% and 74% may submit a medical certificate for condonation consideration.", "Academic", "College Official Guidelines"),
+                ("What is the hostel fee structure?", "The total annual hostel fee is ₹65,000, which includes accommodation (₹35,000), mess charges (₹25,000), and refundable security deposit (₹5,000).", "Hostel", "Hostel Administration"),
+                ("What are the college library working hours?", "The central library is open from 8:00 AM to 8:00 PM on working days (Monday to Saturday) and 9:00 AM to 4:00 PM on Sundays.", "Library", "Library Manual"),
+                ("When are semester exams conducted?", "Odd semester examinations are typically held in November–December, and Even semester examinations are held in April–May.", "Exams", "Academic Calendar"),
+                ("What is the placement record of the college?", "The college maintains a 92%+ placement rate with over 150+ visiting recruiters including top tech and core software companies, with highest packages reaching up to ₹24 LPA.", "Placement", "Placement Cell"),
+                ("How do I apply for leave?", "Leave applications must be submitted online through the Student Portal or physically to the Head of Department (HOD) at least 2 days prior to planned leave.", "General", "Student Guidelines"),
+                ("How can I contact the college admission office?", "You can contact the admission office at admission@college.edu or call the helpline at +91 44 2345 6789 during working hours (9 AM - 5 PM).", "Admissions", "College Helpdesk")
+            ]
+            for q, a, cat, src in default_items:
+                cursor.execute("""
+                    INSERT INTO knowledge_items (question, answer, category, source, language, active, dataset_version, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 'en', 1, 1, ?, ?)
+                """, (q, a, cat, src, now_str, now_str))
+
         conn.commit()
         conn.close()
     except Exception as e:
