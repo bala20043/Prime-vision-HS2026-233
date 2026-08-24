@@ -19,24 +19,27 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS Configuration — Allow Vercel frontend + localhost dev
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-allowed_origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://prime-vision-hs-2026-233.vercel.app",
-    "https://collegesmc.vercel.app",
-    frontend_url,
-]
+# Universal CORS Middleware — Guarantees preflight & credentialed requests succeed for Vercel & local origins
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    origin = request.headers.get("origin")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    if request.method == "OPTIONS":
+        response = Response(status_code=204)
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+    response = await call_next(request)
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 @app.on_event("startup")
 def startup_event():
