@@ -4,7 +4,13 @@
  * ZERO Mock Answers — Strict Zero-Hallucination Policy.
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000';
+const getBackendUrl = () => {
+  if (import.meta.env.VITE_BACKEND_URL) return import.meta.env.VITE_BACKEND_URL.replace(/\/$/, '');
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://127.0.0.1:8000';
+  }
+  return 'https://college-chatbot-backend.onrender.com';
+};
 
 const UNKNOWN_RESPONSES = {
   en: 'This information is not stated in the provided documents.',
@@ -13,16 +19,31 @@ const UNKNOWN_RESPONSES = {
 };
 
 export async function askQuestion(question, language = 'en', conversationId = null) {
+  const backendUrl = getBackendUrl();
+  const payload = {
+    question: question.trim(),
+    language: language,
+    conversation_id: conversationId
+  };
+
   try {
-    const res = await fetch(`${BACKEND_URL}/api/ask`, {
+    // 1. Try configured backend URL
+    let res = await fetch(`${backendUrl}/api/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: question.trim(),
-        language: language,
-        conversation_id: conversationId
-      }),
+      body: JSON.stringify(payload),
     });
+
+    // 2. Fallback to relative /api/ask if port 8000/proxy is active
+    if (!res.ok && backendUrl !== '/api') {
+      try {
+        res = await fetch('/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (e) {}
+    }
 
     if (res.ok) {
       const data = await res.json();
@@ -40,7 +61,7 @@ export async function askQuestion(question, language = 'en', conversationId = nu
     console.warn('Backend API connection notice:', err);
   }
 
-  // Fallback to strict zero-hallucination protection response if backend offline or unstated
+  // Fallback to strict zero-hallucination protection response if backend unreachable
   return {
     success: true,
     type: 'unknown',

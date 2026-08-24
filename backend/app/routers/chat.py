@@ -92,7 +92,11 @@ def ask_question(data: AskSchema):
     if detected_lang != "en":
         query_in_english = translate_text(data.question, target_lang="en")
 
-    # 3. Search Knowledge Base using English query
+    # 3. Search Knowledge Base using English query (auto-reindex if index empty)
+    if not global_matcher.is_indexed or not global_matcher.corpus:
+        from app.services.dataset_service import reindex_knowledge_base
+        reindex_knowledge_base()
+
     matched_item, confidence, match_type = global_matcher.match(query_in_english)
 
     # 4. Auto-create Conversation in Supabase & SQLite if not provided
@@ -102,7 +106,7 @@ def ask_question(data: AskSchema):
         cid = save_conversation(title=title_snippet, user_id=data.user_id or "student_user")
 
     # 5. Known vs Unknown Handling
-    if matched_item and confidence >= 0.40:
+    if matched_item and confidence >= 0.20:
         # Retrieve official stored answer
         stored_answer = matched_item["answer"]
         # Translate stored answer to user's response language using deep-translator
