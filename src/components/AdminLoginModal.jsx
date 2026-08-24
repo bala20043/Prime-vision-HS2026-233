@@ -10,7 +10,7 @@ export default function AdminLoginModal({ isOpen, onClose }) {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { login, saveUserSession } = useAuth();
   const navigate = useNavigate();
 
   if (!isOpen) return null;
